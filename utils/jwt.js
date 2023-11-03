@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-
+// #f1- create jwt token while register
 const createJWT = ({ payload }) => {
   console.log('payload>>>>>', payload);
   const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -7,7 +7,7 @@ const createJWT = ({ payload }) => {
   });
   return token;
 };
-
+// #f2 - check the token while login
 const isTokenValid = ({ token }) => jwt.verify(token, process.env.JWT_SECRET);
 
 //#f:6-attaching the res from the auth controller and getting the user credentails  from the token user

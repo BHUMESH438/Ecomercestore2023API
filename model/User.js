@@ -1,4 +1,4 @@
-const { string } = require('joi');
+// // const { string } = require('joi');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
@@ -31,13 +31,17 @@ const UserSchema = new mongoose.Schema({
     default: 'user'
   }
 });
+
+//hasing before saving to DB
 UserSchema.pre('save', async function () {
   // console.log('>>>>>>>>>>updated');
   if (!this.isModified('password')) return; //#f1#f3
   const salt = await bcrypt.genSalt(10);
+  //storing the hashed password in the key password of usermodel
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+//comparing the loggedin password and hashed password
 UserSchema.methods.comparePassword = async function (userpassword) {
   const isMatch = await bcrypt.compare(userpassword, this.password);
   return isMatch;

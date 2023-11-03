@@ -187,3 +187,89 @@ const register = async (req, res) => {
 ## handle password
 
 - before we save the document/data from server to DB we must hash the password
+
+```js chatgpt genral hash and compare
+const bcrypt = require('bcrypt');
+const saltRounds = 10; // You can adjust the number of salt rounds as needed.
+
+// Sample: Hash a password
+const plainTextPassword = 'mySecretPassword';
+bcrypt.hash(plainTextPassword, saltRounds, (err, hash) => {
+  if (err) {
+    console.error('Error hashing the password:', err);
+  } else {
+    // Store the 'hash' in your database.
+    console.log('Hashed Password:', hash);
+
+    // Sample: Compare a hashed password with a plaintext password
+    const storedHash = hash; // Retrieve the hashed password from your database.
+
+    const loginPassword = 'mySecretPassword'; // The plaintext password provided during login.
+
+    bcrypt.compare(loginPassword, storedHash, (err, result) => {
+      if (err) {
+        console.error('Error comparing passwords:', err);
+      } else {
+        if (result) {
+          console.log('Password matches. Authentication successful.');
+        } else {
+          console.log('Password does not match. Authentication failed.');
+        }
+      }
+    });
+  }
+});
+```
+
+- hashing is the oneway strak once we hashed a password while registering then the only way to compare it by re-entering the same password while login and compare it
+
+### jwt
+
+- in response we send the token to the client and from the client the user will send back the token with barer in the head authorization
+- after getting the token from the client server send back the respective client id data
+- (jwt authorize)[https://www.section.io/engineering-education/how-to-build-authentication-api-with-jwt-token-in-nodejs/]
+
+- create token in the register user
+- use the created user credentials for the token
+
+```js
+const jwt = require('jsonwebtoken');
+const register = async (req, res) => {
+  const user = await User.create({ name, email, password, role });
+  //chek unique emial in schema and fn
+  //check role for first occurence 'admin'
+  //hash password while registering, do the pre in mongoose in scheema
+  //create token details from the user
+  const tokenUser = { name: user.name, userId: user._id, role: user.role };
+  //pass the jwtsecrect along with the created token details in register
+  const token = jwt.sign(tokenuser, 'jwtSecret', { expiresIn: '1d' });
+  res.status(200).json({ user: tokenUser, token });
+};
+```
+
+### cookie
+
+- we can store the jwt token in the cookies instead of storing that in the response and browsers local storage
+- express has res.cookies() method to store the cookies in the local storage.
+
+```js
+  const oneDay = 1000 * 60 * 60 * 24;
+res.cookie('token',token,{
+  httponly:true//to secure from xss,crossbrowser attack
+  expires: new Date(Date.now()+oneDay),
+  //in production send the cookie through https
+  //and normally in dev send the cookie through http only
+  secure:process.env.NODE_ENV === 'production'
+  signed:true,
+})
+```
+
+- each and every time the requeat from the browser will get the res from the server by using cookies.
+- ajax method isninvolved in the cookies process
+- so without reloading the browser, client will get the cookies associated with jwt from the server
+
+### refactor cookie
+
+```js
+attchcokies fn will attach the cookie with the jwt token and along with the res from the register
+```
