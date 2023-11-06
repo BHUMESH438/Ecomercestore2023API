@@ -6,6 +6,7 @@ const { getSingleProductReview } = require('../controllers/reviewController');
 
 router
   .route('/')
+  //authenticateUser = unpacking the cookies to get the user data to product routes
   .post([authenticateUser, authPermission('admin')], createProduct)
   .get(getAllProducts);
 

@@ -7,13 +7,15 @@ const path = require('path'); //path is an inbuilt module to set the path so tha
 
 const createProduct = async (req, res) => {
   //our middleware unpack the cookie and jwt and give the user loggedin in that product
+  //creating user property wiht the userId from auth middleware
+  // client just gives the loginid server should join the unpacked cookie user id  with the product of the specific user
   req.body.user = req.user.userId;
   console.log('>>>>>>>>>>>>>>', req.body);
   const product = await Product.create(req.body);
   res.status(StatusCodes.CREATED).json({ product });
 };
 const getAllProducts = async (req, res) => {
-  const products = await Product.find({});
+  const products = await Product.find({}); //find will give all products
   res.status(StatusCodes.OK).json({ products, count: products.length });
 };
 

@@ -61,6 +61,7 @@ const ProductSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    //this will link the product details with the specific userid so the single user can list moer noof product
     user: {
       type: mongoose.Types.ObjectId,
       ref: 'User',

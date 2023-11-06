@@ -251,6 +251,7 @@ const register = async (req, res) => {
 
 - we can store the jwt token in the cookies instead of storing that in the response and browsers local storage
 - express has res.cookies() method to store the cookies in the local storage.
+- once we send the jwt token in the cookie with res, for each req to that specific route the browser brings back the cookies from the request
 
 ```js
   const oneDay = 1000 * 60 * 60 * 24;
@@ -268,8 +269,222 @@ res.cookie('token',token,{
 - ajax method isninvolved in the cookies process
 - so without reloading the browser, client will get the cookies associated with jwt from the server
 
+- In summary, app.use(cookieParser()); is used to parse and extract cookies from incoming requests on the server. To send cookies to the browser in the response, you use the res.cookie() method with the appropriate options, including the signed option if you want to use signed cookies. Once the browser stores the cookie, it will automatically include it in subsequent requests, and the server can then use cookieParser() with the provided secret key to verify and extract the cookies in each request.
+
+### session storage cookies
+
+A session is a mechanism for maintaining state and managing user data between multiple HTTP requests in a web application. It allows you to keep track of a user's interactions with your application across different pages and requests. Sessions are an essential concept for building stateful web applications.
+
+Key characteristics of sessions include:
+
+1. **Stateful**: Sessions make web applications stateful, meaning they can remember data about a user between different interactions or requests.
+
+2. **Temporary**: Sessions are temporary and have a limited lifetime. They can expire after a certain period of inactivity or when the user logs out.
+
+3. **Unique Identifier**: A session is usually associated with a unique identifier (session ID) that is generated and stored as a cookie in the user's browser. This ID is used to link subsequent requests to the same session.
+
+4. **Data Storage**: User-specific data is stored on the server and associated with the session ID. This data can include user authentication information, user preferences, shopping cart contents, or any other information relevant to the user's session.
+
+5. **Security**: Sessions can be more secure than storing data in cookies directly because sensitive information is stored on the server, and only a session ID is stored in the client's cookie.
+
+Common use cases for sessions include:
+
+- User authentication and authorization: Storing user credentials or tokens to maintain user sessions.
+- Shopping carts: Keeping track of items a user has added to their cart while shopping.
+- Personalization: Storing user-specific preferences and settings.
+- Form data: Retaining user input data when moving between pages.
+- Keeping track of user activity and interactions.
+
+Sessions are implemented differently in various web technologies and frameworks. In server-side technologies like PHP or Express.js, sessions are typically managed using server-side storage, such as in-memory storage, databases, or other session management solutions. In client-side technologies, like single-page applications (SPAs), sessions may be managed differently, often relying on token-based authentication or custom state management solutions.
+
+The goal of using sessions is to create a smooth and personalized user experience, as it allows the web application to remember user-specific data and interactions throughout the user's visit.
+
 ### refactor cookie
 
 ```js
 attchcokies fn will attach the cookie with the jwt token and along with the res from the register
+```
+
+### signed and secured cookioes
+
+- for safe cookie token pass the jwt.secret.signature in the cookieparser middleware
+
+```js
+
+app.use(cookieParser(process.env.JWT_SECRET)); //ccokie will be located in the req as signed cookies
+
+
+ res.cookie('token', token, {
+    httpOnly: true,
+    expires: new Date(Date.now() + oneDay),
+    secure: process.env.NODE_ENV === 'production', //if env is production returts true or false(in dev)
+    signed: true //if teh signed value is true then we must sign it in the app middleware
+  });
+};
+```
+
+- when it comes to secure options it only allows the browsers to send through the https
+- signed cookie will be visible but with the signature, so it can detect if the client modified the cookie
+- if we didnot secure and signed the cookies then we can get the cookie from the req.cookies and if we secured and signed the cookies we get the cookies as req.cookies.signedcookies frorm the browser
+
+### cookie lifecycle - once we send the jwt token in the cookie with res, for each req to that specific route the browser brings back the cookies from the request?
+
+Yes, when you send a JWT token in a cookie as part of the response using `res.cookie()` or a similar method, the browser will automatically include that cookie in subsequent requests to the same domain and path. It's the browser's responsibility to manage and send cookies with each HTTP request to the same domain and path where the cookies are valid.
+
+Here's a step-by-step breakdown of how this process works:
+
+1. When the server sends a response that includes a JWT token in a cookie, the browser stores the cookie locally.
+
+2. In subsequent requests to the same domain and path, the browser automatically attaches the relevant cookies to the request headers, including the JWT token stored in the cookie.
+
+3. When the server receives a request, it can access the request headers, which include the cookies sent by the browser. This allows the server to retrieve the JWT token.
+
+4. The server can then verify the JWT token, extract user information or permissions, and use it to authenticate and authorize the user for the requested route or resource.
+
+This mechanism allows for user sessions and authentication to be maintained across multiple requests without the need for the user to reauthenticate on each request. The browser handles the cookie management, ensuring that the cookies are included in the request headers when appropriate.
+
+It's essential to configure the cookie with the appropriate settings, such as domain, path, and expiration, to control the scope and lifetime of the cookie. Additionally, the JWT should be properly signed and secured to prevent tampering or unauthorized access.
+
+### auth user setup
+
+- authenticateUser middleware - for this check the signedcoookies in the rquest of the user router. to get the signed cookies confrim that u given the cookieparser middle are which helps to parse the cookie to the request
+
+### login route and logout route
+
+- login route
+  check the email,password(400);
+  check the existing email in db(401);
+  use compare password method in user model
+
+```js comparing the login password with hashed register password which is in DB
+UserSchema.methods.comparePassword = async function (userpassword) {
+  const isMatch = await bcrypt.compare(userpassword, this.password);
+  return isMatch;
+};
+```
+
+if it matched then give then return the tokenuser with user credentials and attach into the cookies with res of login and also return the response as tokenuser
+
+inlogout
+
+```js
+const logout = async (req, res) => {
+  res.cookie('token', 'logout', {
+    httpOnly: true,
+    expires: new Date(Date.now())
+  });
+  res.status(StatusCodes.OK).json({ msg: 'ok logged out' });
+};
+
+module.exports = { register, login, logout };
+```
+
+### middlewares in userRoutes
+
+- authenticate user
+  we use next() in the middleware to pass the credentials to the next controller/fn in the routes;
+  in the req we check wether the token is signed;
+  if signed then we verify the token with jwtverfy fn with jwtsecret and also destructure it and insert it with the req.user property nested obj property values and pass to the next fn/contorlller
+  ```js
+   const token = req.signedCookies.token;
+    try {
+    const { name, userId, role } = isTokenValid({ token });
+    req.user = { name, userId, role };
+  ```
+- authpermissions
+
+```js
+const authPermission = (...roles) => {
+  //here roles will act as a rest operator and it will return an array from a function
+  return (req, res, next) => {
+    // 403
+    if (!roles.includes(req.user.role)) {
+      throw new CustomError.UnauthorizedError('Unauthorized access to this user');
+    }
+    next();
+  };
+};
+```
+
+### authroutes and controllers
+
+- getallusers
+
+```js
+const users = await User.find({ role: 'user' }).select('-password');
+```
+
+-getsingle user
+
+```js
+const user = await User.find({ _id: req.params.id }).select('-password');
+const CustomError = require('../errors');
+checkPermission(req.user, user[0]._id);
+const checkPermission = (reqUser, resourceUserId) => {
+  //if admin
+  if (reqUser.role === 'admin') return;
+  // if current user
+  if (reqUser.userId === resourceUserId.toString()) return;
+  //else
+  throw new CustomError.UnauthorizedError('user not allowed to peek');
+};
+module.exports = checkPermission;
+```
+
+-showcurrent user
+
+```js
+res.status(StatusCodes.OK).json({ user: req.user });
+```
+
+-updateuser
+update email and name
+
+```js
+const {email,name}=req.body
+!email||!name? throw new Error(400): const user = await User.findOne({_id:req.body.userId})//this usderId we get from the create token obj from register
+await.user.save();
+//create updated tokken and attach the cookies
+const tokenUser = createTokenUser(user)
+attachcookiesTokenResoponse({res,user:tokenUser})
+
+```
+
+- updateuserPassword
+
+```js
+!oldpassword || !newpassword - check 400
+check in DB findOne({_id:req.user.userId}) 404
+compare the hashed registerd password with already existing oldpassword
+ const isPasswordCorrect = await user.comparePassword(oldpassword);
+check 401
+user.password = newPassword
+await user.save();
+res.status(201).json(msg:'updated')
+```
+
+### create product routes and controller and model
+
+creteproduct;
+
+- link the product model with user model
+- use middleware to wrap the token and give the uesr credentials
+- create a user proberty to req body of the create product cont
+
+getallproduct,getsingleproduct,updateproduct,deleteproduct,
+
+imageUPload
+
+```js
+-app
+const fileuploads = require('express-fileupload');
+app.use(fileuploads())
+- client
+req.file=>key:image;value:file
+localhost5000/api/v1/products/uploadImage
+- shemamodel for product
+image:{
+  type:String,
+  default:'public/upload/image.jpeg'
+}
 ```

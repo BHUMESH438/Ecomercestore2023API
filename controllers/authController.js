@@ -17,7 +17,7 @@ const register = async (req, res) => {
   const user = await User.create({ name, email, password, role });
   // //#f-4:
   const tokenUser = createTokenUser(user);
-  //just attach
+  //just attach this we will get from the
   attachCookiesToResponse({ res, user: tokenUser });
   // //if we didnot used the cookies then we must pass the token in the res
   res.status(StatusCodes.CREATED).json({ user: tokenUser });
@@ -25,11 +25,11 @@ const register = async (req, res) => {
 //login-----------------------------------------------------------------
 const login = async (req, res) => {
   const { email, password } = req.body;
-
+  //401
   if (!email || !password) {
     throw new CustomError.BadRequestError('both fields is needed');
   }
-
+  //404
   const user = await User.findOne({ email });
   if (!user) {
     throw new CustomError.UnauthenticatedError('user email didnot exist');

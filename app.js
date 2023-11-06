@@ -24,16 +24,17 @@ const notFoundMiddleware = require('./middleware/not-found');
 const Morgan = require('morgan');
 const fileupload = require('express-fileupload');
 //8.middleware- give access to json data in req.body
-app.use(cors());
+app.use(cors()); //if our clinet is on differnt port
 app.use(Morgan('tiny'));
-app.use(express.json());
-app.use(cookieParser(process.env.JWT_SECRET));
+app.use(express.json()); //parse the json data
+app.use(cookieParser(process.env.JWT_SECRET)); //ccokie will be located in the req as signed cookies
+//if the client is inside the server use static to nsvigate
 app.use(express.static('./public')); //once we upload to server we want that url to point to the public file
 app.use(fileupload());
 //9.routes
 app.get('/api/v1', (req, res) => {
   // console.log('>>>>>>>>>>>>>>>>>>>>>>cookies', req.cookies);
-  // console.log('>>>>>>>>>>>>>>>>>>>>>>signedcookies', req.signedCookies);
+  console.log('>>>>>>>>>>>>>>>>>>>>>>signedcookies', req.signedCookies);
   res.send('ecommerce cookie');
 });
 app.use('/api/v1/auth', authRouter);
@@ -70,4 +71,12 @@ start();
 
 // ##file upload(upload to localhost server from local folder through postman) another way of file upload is in the postman 1.set the upload route to post, 2.go to the body and select the form-data,3.select the key as image as we specified it as image in the controller,4.select the text to file near it,5.select the file send the req and consolelog req.files in the uploadimage controller
 
-// ##file upload(setup the public path) after uploading the  image in the public path import the path module and already we imported the express-fileipload which should be imported before uploading the image and join the path with the public folder path
+// ##file upload(setup the public path) --after uploading the  image in the public path import the path module and already we imported the express-fileipload which should be imported before uploading the image and join the path with the public folder path
+
+//=========================================
+
+// ## connecting the react and node - same port and different port proxy and networking
+
+// ## for the cookie we can only send them back to the same domain i.e 5000 to 5000 if it is on the different domain then use "proxy" in the client so that  it will send back to the server. while using the proxy set only the url to be directed in the fetch apis and other than directly settiong the url as the localhost//port:5000 like that
+
+//## also we have redirects in the redirects were we will give the /api/* + to the link_ form_the_live_server

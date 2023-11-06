@@ -34,7 +34,7 @@ const UserSchema = new mongoose.Schema({
 
 //hasing before saving to DB
 UserSchema.pre('save', async function () {
-  // console.log('>>>>>>>>>>updated');
+  //as we used the user.save() hook in the update user controller it will trigger the pre hook again and again and we double save the hashed password, to prevent this we can use this.IsModified('password'), this.isModifiedpath() will give which schema property is changed
   if (!this.isModified('password')) return; //#f1#f3
   const salt = await bcrypt.genSalt(10);
   //storing the hashed password in the key password of usermodel
